@@ -2,6 +2,9 @@ import io
 import os
 from collections import OrderedDict
 
+import matplotlib
+matplotlib.use("Agg")
+
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -98,7 +101,7 @@ def extract_fit_table(circuit):
 def read_uploaded_csv_temp(uploaded_file):
     """
     impedance.preprocessing.readCSV expects a filepath,
-    so we save the uploaded file temporarily.
+    so save the uploaded file temporarily.
     """
     temp_path = "temp_uploaded_file.csv"
     with open(temp_path, "wb") as f:
@@ -108,7 +111,8 @@ def read_uploaded_csv_temp(uploaded_file):
 
 def make_fit_plot(frequencies, Z, Z_fit, major_ticks):
     """
-    Uses your external plotting utility.
+    Build and return the matplotlib figure.
+    Do not display or close it here.
     """
     fig = plot_impedance_results_zoomable(frequencies, Z, Z_fit, major_ticks)
     return fig
@@ -159,10 +163,29 @@ with st.sidebar:
         else 0
     )
 
-    max_freq = st.number_input("Max Frequency (Hz)", value=1000000.0, step=1000.0, format="%.6g")
-    min_freq = st.number_input("Min Frequency (Hz)", value=1.0, step=1.0, format="%.6g")
-    major_ticks = st.number_input("Major Ticks (Nyquist)", value=500, step=50)
-    num_iterations = st.number_input("Number of Iterations", value=1, step=1, min_value=1)
+    max_freq = st.number_input(
+        "Max Frequency (Hz)",
+        value=1000000.0,
+        step=1000.0,
+        format="%.6g"
+    )
+    min_freq = st.number_input(
+        "Min Frequency (Hz)",
+        value=1.0,
+        step=1.0,
+        format="%.6g"
+    )
+    major_ticks = st.number_input(
+        "Major Ticks (Nyquist)",
+        value=500,
+        step=50
+    )
+    num_iterations = st.number_input(
+        "Number of Iterations",
+        value=1,
+        step=1,
+        min_value=1
+    )
 
     run_analysis = st.button("Analyze")
 
@@ -225,8 +248,10 @@ if run_analysis:
 
             fit_report = str(circuit)
             fit_table = extract_fit_table(circuit)
+
             fig = make_fit_plot(frequencies, Z, Z_fit, major_ticks)
             plot_bytes = fig_to_png_bytes(fig)
+            plt.close(fig)
 
             st.session_state.last_circuit = circuit
             st.session_state.last_fit_report = fit_report
