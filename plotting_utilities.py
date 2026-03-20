@@ -66,7 +66,8 @@ def _apply_nyquist_format(ax, Z, Z_fit, major_ticks, label_fs, legend_fs, title_
     ax.set_ylim(*ylim)
 
     # Keep 1:1 aspect ratio
-    ax.set_aspect("equal", adjustable="box")
+    ax.set_box_aspect(1)
+    ax.set_aspect("equal", adjustable="datalim")
 
     if major_ticks is not None and major_ticks > 0:
         ax.xaxis.set_major_locator(MultipleLocator(major_ticks))
@@ -89,6 +90,7 @@ def _apply_bode_mag_format(ax, frequencies, Z, Z_fit, label_fs, legend_fs, title
 
     ax.set_xscale("log")
     ax.set_yscale("log")
+    ax.set_box_aspect(1)
     ax.set_xlabel("Frequency / Hz", fontsize=label_fs)
     ax.set_ylabel(r"$|Z|$ / $\Omega$", fontsize=label_fs)
     ax.set_title("Bode magnitude", fontsize=title_fs)
@@ -105,6 +107,7 @@ def _apply_bode_phase_format(ax, frequencies, Z, Z_fit, label_fs, legend_fs, tit
     ax.plot(frequencies, phase_fit, "-", linewidth=2.0, label="Model fit", color=FIT_COLOR, zorder=2)
 
     ax.set_xscale("log")
+    ax.set_box_aspect(1)
     ax.set_xlabel("Frequency / Hz", fontsize=label_fs)
     ax.set_ylabel(r"$-\phi$ / °", fontsize=label_fs)
     ax.set_title("Bode phase", fontsize=title_fs)
@@ -125,6 +128,7 @@ def _apply_residual_format(ax, frequencies, Z, Z_fit, label_fs, legend_fs, title
     ax.axhline(0, linestyle="--", linewidth=1.0, color="black", alpha=0.7)
 
     ax.set_xscale("log")
+    ax.set_box_aspect(1)
     ax.set_xlabel("Frequency / Hz", fontsize=label_fs)
     ax.set_ylabel(r"$\Delta$ / $\Omega$", fontsize=label_fs)
     ax.set_title("Residuals", fontsize=title_fs)
