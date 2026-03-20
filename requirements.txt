@@ -6,3 +6,4 @@ scipy
 impedance
 Pillow
 openpyxl
+mplcursors
