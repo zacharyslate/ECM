@@ -21,7 +21,7 @@ from plotting_utilities import plot_impedance_results_zoomable
 # Page config
 # -----------------------------
 st.set_page_config(
-    page_title="Impedance Analyzer",
+    page_title="Equivalent Circuit Model Analysis",
     page_icon="📈",
     layout="wide"
 )
