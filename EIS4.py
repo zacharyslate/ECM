@@ -17,17 +17,40 @@ from circuits import circuit_options
 from plotting_utilities import plot_impedance_results_zoomable
 
 
-st.set_page_config(page_title="Impedance Analyzer", layout="wide")
+# -----------------------------
+# Page config
+# -----------------------------
+st.set_page_config(
+    page_title="Impedance Analyzer",
+    page_icon="📈",
+    layout="wide"
+)
+
+
+# -----------------------------
+# Optional light styling
+# -----------------------------
+st.markdown(
+    """
+    <style>
+    .block-container {
+        padding-top: 1.2rem;
+        padding-bottom: 1.5rem;
+    }
+    .small-note {
+        color: #6b7280;
+        font-size: 0.92rem;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
 
 
 # -----------------------------
 # Helper functions
 # -----------------------------
 def get_param_names_and_units(circuit):
-    """
-    Robustly obtain parameter names and units from impedance.py.
-    Handles different possible return formats from get_param_names().
-    """
     names = []
     units = []
 
@@ -54,11 +77,6 @@ def get_param_names_and_units(circuit):
 
 
 def extract_fit_table(circuit):
-    """
-    Return a DataFrame of fitted parameters.
-    Includes parameter names, fitted values, uncertainties,
-    relative errors, and units.
-    """
     params = np.array(circuit.parameters_, dtype=float)
     names, units = get_param_names_and_units(circuit)
 
@@ -91,7 +109,7 @@ def extract_fit_table(circuit):
             "Parameter": name,
             "Value": value,
             "Error": error,
-            "Relative_Error_%": rel_error,
+            "Relative Error (%)": rel_error,
             "Unit": unit
         })
 
@@ -99,10 +117,6 @@ def extract_fit_table(circuit):
 
 
 def read_uploaded_csv_temp(uploaded_file):
-    """
-    impedance.preprocessing.readCSV expects a filepath,
-    so save the uploaded file temporarily.
-    """
     temp_path = "temp_uploaded_file.csv"
     with open(temp_path, "wb") as f:
         f.write(uploaded_file.getbuffer())
@@ -110,10 +124,6 @@ def read_uploaded_csv_temp(uploaded_file):
 
 
 def make_fit_plot(frequencies, Z, Z_fit, major_ticks):
-    """
-    Build and return the matplotlib figure.
-    Do not display or close it here.
-    """
     fig = plot_impedance_results_zoomable(frequencies, Z, Z_fit, major_ticks)
     return fig
 
@@ -136,13 +146,23 @@ if "last_fit_table" not in st.session_state:
     st.session_state.last_fit_table = None
 if "last_plot_bytes" not in st.session_state:
     st.session_state.last_plot_bytes = None
+if "analysis_done" not in st.session_state:
+    st.session_state.analysis_done = False
 
 
 # -----------------------------
-# Sidebar controls
+# Header
 # -----------------------------
-st.title("Impedance Analyzer")
+st.title("📈 Impedance Analyzer")
+st.markdown(
+    '<div class="small-note">Upload a CSV file, choose a circuit, define the frequency window, and run an equivalent-circuit fit.</div>',
+    unsafe_allow_html=True
+)
 
+
+# -----------------------------
+# Sidebar
+# -----------------------------
 sorted_circuit_options = OrderedDict(
     sorted(circuit_options.items(), key=lambda item: len(item[0]))
 )
@@ -156,7 +176,7 @@ with st.sidebar:
     )
 
     selected_circuit = st.selectbox(
-        "Circuit String",
+        "Circuit",
         options=list(sorted_circuit_options.keys()),
         index=list(sorted_circuit_options.keys()).index("R0-p(R1,CPE1)-CPE2")
         if "R0-p(R1,CPE1)-CPE2" in sorted_circuit_options
@@ -164,59 +184,75 @@ with st.sidebar:
     )
 
     max_freq = st.number_input(
-        "Max Frequency (Hz)",
+        "Maximum frequency (Hz)",
         value=1000000.0,
         step=1000.0,
         format="%.6g"
     )
+
     min_freq = st.number_input(
-        "Min Frequency (Hz)",
+        "Minimum frequency (Hz)",
         value=1.0,
         step=1.0,
         format="%.6g"
     )
+
     major_ticks = st.number_input(
-        "Major Ticks (Nyquist)",
+        "Nyquist major ticks",
         value=500,
         step=50
     )
+
     num_iterations = st.number_input(
-        "Number of Iterations",
+        "Fit iterations",
         value=1,
         step=1,
         min_value=1
     )
 
-    run_analysis = st.button("Analyze")
+    run_analysis = st.button("Analyze", use_container_width=True)
 
 
 # -----------------------------
-# Main layout
+# Top info row
 # -----------------------------
-col1, col2 = st.columns([1, 1])
+info1, info2, info3 = st.columns(3)
 
-with col1:
-    st.subheader("Fit Results")
+with info1:
+    st.metric("Selected circuit", selected_circuit)
 
-    if st.session_state.last_fit_report:
-        st.text_area(
-            "Report",
-            st.session_state.last_fit_report,
-            height=400
-        )
+with info2:
+    st.metric("Number of parameters", sorted_circuit_options[selected_circuit])
+
+with info3:
+    if uploaded_file is None:
+        st.metric("File status", "No file")
     else:
-        st.info("Run an analysis to see the fit report.")
+        st.metric("File status", "Loaded")
 
-with col2:
-    st.subheader("Circuit Info")
-    st.write(f"**Selected circuit:** `{selected_circuit}`")
-    st.write(f"**Number of parameters:** {sorted_circuit_options[selected_circuit]}")
 
+# -----------------------------
+# Circuit preview row
+# -----------------------------
+left, right = st.columns([1.1, 1])
+
+with left:
+    st.subheader("Circuit preview")
     image_path = os.path.join("circuit_images", f"{selected_circuit}.png")
     if os.path.exists(image_path):
         st.image(image_path, caption=selected_circuit, use_container_width=True)
     else:
-        st.warning("Circuit image not found.")
+        st.info("No circuit image found for this circuit string.")
+
+with right:
+    st.subheader("Current analysis settings")
+    st.write(f"**Frequency range:** {min_freq:g} Hz to {max_freq:g} Hz")
+    st.write(f"**Iterations:** {num_iterations}")
+    st.write(f"**Nyquist major ticks:** {major_ticks}")
+    st.write(f"**Uploaded file:** {uploaded_file.name if uploaded_file is not None else 'None'}")
+
+
+st.divider()
 
 
 # -----------------------------
@@ -227,36 +263,38 @@ if run_analysis:
         st.error("Please upload a CSV file first.")
     else:
         try:
-            temp_path = read_uploaded_csv_temp(uploaded_file)
+            with st.spinner("Running fit..."):
+                temp_path = read_uploaded_csv_temp(uploaded_file)
 
-            frequencies, Z = preprocessing.readCSV(temp_path)
-            frequencies, Z = preprocessing.cropFrequencies(
-                frequencies, Z, freqmin=min_freq, freqmax=max_freq
-            )
+                frequencies, Z = preprocessing.readCSV(temp_path)
+                frequencies, Z = preprocessing.cropFrequencies(
+                    frequencies, Z, freqmin=min_freq, freqmax=max_freq
+                )
 
-            num_params = sorted_circuit_options[selected_circuit]
+                num_params = sorted_circuit_options[selected_circuit]
 
-            circuit = CustomCircuit(selected_circuit, initial_guess=[1] * num_params)
-            circuit.fit(frequencies, Z)
-
-            for _ in range(num_iterations - 1):
-                initial_guess = circuit.parameters_
-                circuit = CustomCircuit(circuit.circuit, initial_guess=initial_guess)
+                circuit = CustomCircuit(selected_circuit, initial_guess=[1] * num_params)
                 circuit.fit(frequencies, Z)
 
-            Z_fit = circuit.predict(frequencies)
+                for _ in range(num_iterations - 1):
+                    initial_guess = circuit.parameters_
+                    circuit = CustomCircuit(circuit.circuit, initial_guess=initial_guess)
+                    circuit.fit(frequencies, Z)
 
-            fit_report = str(circuit)
-            fit_table = extract_fit_table(circuit)
+                Z_fit = circuit.predict(frequencies)
 
-            fig = make_fit_plot(frequencies, Z, Z_fit, major_ticks)
-            plot_bytes = fig_to_png_bytes(fig)
-            plt.close(fig)
+                fit_report = str(circuit)
+                fit_table = extract_fit_table(circuit)
 
-            st.session_state.last_circuit = circuit
-            st.session_state.last_fit_report = fit_report
-            st.session_state.last_fit_table = fit_table
-            st.session_state.last_plot_bytes = plot_bytes
+                fig = make_fit_plot(frequencies, Z, Z_fit, major_ticks)
+                plot_bytes = fig_to_png_bytes(fig)
+                plt.close(fig)
+
+                st.session_state.last_circuit = circuit
+                st.session_state.last_fit_report = fit_report
+                st.session_state.last_fit_table = fit_table
+                st.session_state.last_plot_bytes = plot_bytes
+                st.session_state.analysis_done = True
 
             st.success("Analysis completed successfully.")
 
@@ -265,32 +303,52 @@ if run_analysis:
 
 
 # -----------------------------
-# Show outputs
+# Results
 # -----------------------------
-if st.session_state.last_plot_bytes is not None:
-    st.subheader("Impedance Plot")
-    st.image(st.session_state.last_plot_bytes)
+if st.session_state.analysis_done:
+    st.subheader("Impedance plot")
 
-if st.session_state.last_fit_table is not None:
-    st.subheader("Fitted Parameters")
-    st.dataframe(st.session_state.last_fit_table, use_container_width=True)
+    plot_col_left, plot_col_center, plot_col_right = st.columns([0.12, 0.76, 0.12])
+    with plot_col_center:
+        st.image(st.session_state.last_plot_bytes)
 
-    csv_data = st.session_state.last_fit_table.to_csv(index=False).encode("utf-8")
+    st.divider()
 
-    c1, c2 = st.columns(2)
+    table_col, report_col = st.columns([1.15, 0.85])
 
-    with c1:
-        st.download_button(
-            label="Download Fit CSV",
-            data=csv_data,
-            file_name="fit_parameters.csv",
-            mime="text/csv"
-        )
+    with table_col:
+        st.subheader("Fitted parameters")
+        st.dataframe(st.session_state.last_fit_table, use_container_width=True, height=350)
 
-    with c2:
-        st.download_button(
-            label="Download Plot PNG",
-            data=st.session_state.last_plot_bytes,
-            file_name="impedance_plot.png",
-            mime="image/png"
-        )
+        csv_data = st.session_state.last_fit_table.to_csv(index=False).encode("utf-8")
+
+        d1, d2 = st.columns(2)
+        with d1:
+            st.download_button(
+                label="Download fit CSV",
+                data=csv_data,
+                file_name="fit_parameters.csv",
+                mime="text/csv",
+                use_container_width=True
+            )
+
+        with d2:
+            st.download_button(
+                label="Download plot PNG",
+                data=st.session_state.last_plot_bytes,
+                file_name="impedance_plot.png",
+                mime="image/png",
+                use_container_width=True
+            )
+
+    with report_col:
+        st.subheader("Fit report")
+        with st.expander("Show report", expanded=True):
+            st.text_area(
+                "Report",
+                st.session_state.last_fit_report,
+                height=350,
+                label_visibility="collapsed"
+            )
+else:
+    st.info("Upload a file and click Analyze to generate the fit, plot, and parameter table.")
