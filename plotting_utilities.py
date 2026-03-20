@@ -1,120 +1,239 @@
-import matplotlib.pyplot as plt
 import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.ticker import MultipleLocator, MaxNLocator
 
-def plot_impedance_results(frequencies, Z, Z_fit, major_ticks):
-    fig, axs = plt.subplots(2, 2, figsize=(11, 8), constrained_layout=True)
 
-    label_fs = 14
-    tick_fs = 11
-    legend_fs = 11
+def _style_axes(ax, tick_fs=10):
+    ax.grid(which="major", linestyle="--", linewidth=0.7, alpha=0.65)
+    ax.grid(which="minor", linestyle=":", linewidth=0.45, alpha=0.35)
+    ax.tick_params(axis="both", labelsize=tick_fs, direction="in")
+    for spine in ax.spines.values():
+        spine.set_linewidth(1.0)
+
+
+def _safe_limits(arr, pad=0.05, force_zero_min=False):
+    arr = np.asarray(arr, dtype=float)
+    amin = np.nanmin(arr)
+    amax = np.nanmax(arr)
+
+    if amin == amax:
+        delta = 1.0 if amin == 0 else abs(amin) * 0.1
+        amin -= delta
+        amax += delta
+
+    span = amax - amin
+    amin -= span * pad
+    amax += span * pad
+
+    if force_zero_min:
+        amin = min(0, amin)
+
+    return amin, amax
+
+
+def plot_impedance_results(frequencies, Z, Z_fit, major_ticks=500):
+    """
+    Publication-style 2x2 impedance summary:
+    a) Nyquist
+    b) Bode magnitude
+    c) Bode phase
+    d) Residuals
+    """
+    frequencies = np.asarray(frequencies)
+    Z = np.asarray(Z)
+    Z_fit = np.asarray(Z_fit)
+
+    fig, axs = plt.subplots(2, 2, figsize=(12, 8.5), constrained_layout=True)
+
+    label_fs = 13
+    tick_fs = 10
+    legend_fs = 10
     panel_fs = 13
+    title_fs = 11
 
-    # Nyquist Plot
-    axs[0, 0].scatter(Z.real, -Z.imag, label='Data', s=45, color="darkcyan")
-    axs[0, 0].plot(Z_fit.real, -Z_fit.imag, '-', label='Model Fit', color="coral", linewidth=2.5)
-    axs[0, 0].set_xlabel(r'$Z_{re}$ / $\Omega$', fontsize=label_fs)
-    axs[0, 0].set_ylabel(r'-$Z_{im}$ / $\Omega$', fontsize=label_fs)
-    axs[0, 0].legend(fontsize=legend_fs)
-    axs[0, 0].set_xlim(left=min(0, np.min(Z.real) * 1.05))
-    axs[0, 0].set_ylim(bottom=min(0, np.min(-Z.imag) * 1.05))
-    axs[0, 0].xaxis.set_major_locator(plt.MultipleLocator(major_ticks))
-    axs[0, 0].yaxis.set_major_locator(plt.MultipleLocator(major_ticks))
-    axs[0, 0].grid(which="both", linestyle='--', linewidth=0.8, alpha=0.7)
-    axs[0, 0].tick_params(axis='both', labelsize=tick_fs)
-    axs[0, 0].text(-0.10, -0.18, 'a', transform=axs[0, 0].transAxes, fontsize=panel_fs, va='top', ha='left')
+    # -------------------------
+    # a) Nyquist
+    # -------------------------
+    ax = axs[0, 0]
+    ax.scatter(Z.real, -Z.imag, s=32, label="Data")
+    ax.plot(Z_fit.real, -Z_fit.imag, "-", linewidth=2.0, label="Model fit")
 
-    # Bode Magnitude Plot
-    axs[0, 1].scatter(frequencies, np.abs(Z), label='Data |Z|', s=45, color="darkcyan")
-    axs[0, 1].plot(frequencies, np.abs(Z_fit), '-', label='Model Fit', color="coral", linewidth=2.5)
-    axs[0, 1].set_xscale('log')
-    axs[0, 1].set_xlabel('Frequency / Hz', fontsize=label_fs)
-    axs[0, 1].set_ylabel(r'$|Z|$ / $\Omega$', fontsize=label_fs)
-    axs[0, 1].legend(fontsize=legend_fs)
-    axs[0, 1].grid(which="both", linestyle='--', linewidth=0.8, alpha=0.7)
-    axs[0, 1].tick_params(axis='both', labelsize=tick_fs)
-    axs[0, 1].text(-0.10, -0.18, 'b', transform=axs[0, 1].transAxes, fontsize=panel_fs, va='top', ha='left')
+    xlim = _safe_limits(Z.real, pad=0.06, force_zero_min=True)
+    ylim = _safe_limits(-Z.imag, pad=0.06, force_zero_min=True)
 
-    # Bode Phase Plot
-    axs[1, 0].scatter(frequencies, -np.angle(Z, deg=True), label='Data Phase', s=45, color="darkcyan")
-    axs[1, 0].plot(frequencies, -np.angle(Z_fit, deg=True), '-', label='Model Fit', color="coral", linewidth=2.5)
-    axs[1, 0].set_xscale('log')
-    axs[1, 0].set_xlabel('Frequency / Hz', fontsize=label_fs)
-    axs[1, 0].set_ylabel(r'-$\Phi(\omega)$ / °', fontsize=label_fs)
-    axs[1, 0].legend(fontsize=legend_fs)
-    axs[1, 0].grid(which="both", linestyle='--', linewidth=0.8, alpha=0.7)
-    axs[1, 0].tick_params(axis='both', labelsize=tick_fs)
-    axs[1, 0].text(-0.10, -0.18, 'c', transform=axs[1, 0].transAxes, fontsize=panel_fs, va='top', ha='left')
+    ax.set_xlim(*xlim)
+    ax.set_ylim(*ylim)
+    ax.set_aspect("equal", adjustable="box")
 
-    # Residual Plot
-    res_meas_real = (Z - Z_fit).real
-    res_meas_imag = -(Z - Z_fit).imag
+    if major_ticks is not None and major_ticks > 0:
+        ax.xaxis.set_major_locator(MultipleLocator(major_ticks))
+        ax.yaxis.set_major_locator(MultipleLocator(major_ticks))
+    else:
+        ax.xaxis.set_major_locator(MaxNLocator(6))
+        ax.yaxis.set_major_locator(MaxNLocator(6))
 
-    axs[1, 1].scatter(frequencies, res_meas_real, label=r"$Z_{re}$ residual", s=40, color="slateblue")
-    axs[1, 1].scatter(frequencies, res_meas_imag, label=r"$-Z_{im}$ residual", s=40, color="mediumvioletred")
-    axs[1, 1].plot(frequencies, res_meas_real, linestyle='-', color="slateblue", linewidth=2)
-    axs[1, 1].plot(frequencies, res_meas_imag, linestyle='-', color="mediumvioletred", linewidth=2)
-    axs[1, 1].axhline(0, linestyle='--', linewidth=1, color='black', alpha=0.6)
-    axs[1, 1].set_xscale('log')
-    axs[1, 1].set_xlabel('Frequency / Hz', fontsize=label_fs)
-    axs[1, 1].set_ylabel(r'$\Delta$ / $\Omega$', fontsize=label_fs)
-    axs[1, 1].legend(fontsize=legend_fs)
-    axs[1, 1].grid(which="both", linestyle='--', linewidth=0.8, alpha=0.7)
-    axs[1, 1].tick_params(axis='both', labelsize=tick_fs)
-    axs[1, 1].text(-0.10, -0.18, 'd', transform=axs[1, 1].transAxes, fontsize=panel_fs, va='top', ha='left')
+    ax.set_xlabel(r"$Z^\prime$ / $\Omega$", fontsize=label_fs)
+    ax.set_ylabel(r"$-Z^{\prime\prime}$ / $\Omega$", fontsize=label_fs)
+    ax.set_title("Nyquist", fontsize=title_fs)
+    ax.legend(fontsize=legend_fs, frameon=False)
+    _style_axes(ax, tick_fs=tick_fs)
+    ax.text(-0.12, 1.04, "a", transform=ax.transAxes, fontsize=panel_fs, fontweight="bold")
 
-    for ax in axs.flat:
-        for label in ax.get_xticklabels():
-            label.set_rotation(0)
+    # -------------------------
+    # b) Bode magnitude
+    # -------------------------
+    ax = axs[0, 1]
+    ax.scatter(frequencies, np.abs(Z), s=28, label="Data")
+    ax.plot(frequencies, np.abs(Z_fit), "-", linewidth=2.0, label="Model fit")
+
+    ax.set_xscale("log")
+    ax.set_yscale("log")
+    ax.set_xlabel("Frequency / Hz", fontsize=label_fs)
+    ax.set_ylabel(r"$|Z|$ / $\Omega$", fontsize=label_fs)
+    ax.set_title("Bode magnitude", fontsize=title_fs)
+    ax.legend(fontsize=legend_fs, frameon=False)
+    _style_axes(ax, tick_fs=tick_fs)
+    ax.text(-0.12, 1.04, "b", transform=ax.transAxes, fontsize=panel_fs, fontweight="bold")
+
+    # -------------------------
+    # c) Bode phase
+    # -------------------------
+    ax = axs[1, 0]
+    phase_data = -np.angle(Z, deg=True)
+    phase_fit = -np.angle(Z_fit, deg=True)
+
+    ax.scatter(frequencies, phase_data, s=28, label="Data")
+    ax.plot(frequencies, phase_fit, "-", linewidth=2.0, label="Model fit")
+
+    ax.set_xscale("log")
+    ax.set_xlabel("Frequency / Hz", fontsize=label_fs)
+    ax.set_ylabel(r"$-\phi$ / °", fontsize=label_fs)
+    ax.set_title("Bode phase", fontsize=title_fs)
+    ax.legend(fontsize=legend_fs, frameon=False)
+    _style_axes(ax, tick_fs=tick_fs)
+    ax.text(-0.12, 1.04, "c", transform=ax.transAxes, fontsize=panel_fs, fontweight="bold")
+
+    # -------------------------
+    # d) Residuals
+    # -------------------------
+    ax = axs[1, 1]
+
+    res_real_pct = 100 * (Z.real - Z_fit.real) / np.maximum(np.abs(Z.real), 1e-30)
+    res_imag_pct = 100 * ((-Z.imag) - (-Z_fit.imag)) / np.maximum(np.abs(-Z.imag), 1e-30)
+
+    ax.scatter(frequencies, res_real_pct, s=24, label=r"$Z^\prime$ residual")
+    ax.scatter(frequencies, res_imag_pct, s=24, label=r"$-Z^{\prime\prime}$ residual")
+    ax.plot(frequencies, res_real_pct, "-", linewidth=1.6)
+    ax.plot(frequencies, res_imag_pct, "-", linewidth=1.6)
+    ax.axhline(0, linestyle="--", linewidth=1.0, color="black", alpha=0.7)
+
+    ax.set_xscale("log")
+    ax.set_xlabel("Frequency / Hz", fontsize=label_fs)
+    ax.set_ylabel("Residual / %", fontsize=label_fs)
+    ax.set_title("Residuals", fontsize=title_fs)
+    ax.legend(fontsize=legend_fs, frameon=False)
+    _style_axes(ax, tick_fs=tick_fs)
+    ax.text(-0.12, 1.04, "d", transform=ax.transAxes, fontsize=panel_fs, fontweight="bold")
 
     return fig
 
-def plot_impedance_results_zoomable(frequencies, Z, Z_fit, major_ticks):
 
-    fig, axs = plt.subplots(2, 2, figsize=(6, 4))
+def plot_impedance_results_zoomable(frequencies, Z, Z_fit, major_ticks=500):
+    """
+    Streamlit-friendly version optimized for on-screen viewing.
+    """
+    frequencies = np.asarray(frequencies)
+    Z = np.asarray(Z)
+    Z_fit = np.asarray(Z_fit)
 
-    # Nyquist Plot
-    scatter_nyquist = axs[0, 0].scatter(Z.real, -Z.imag, label='Data', s=10, color="darkcyan")
-    axs[0, 0].plot(Z_fit.real, -Z_fit.imag, '-', label='Model Fit', color="coral")
-    axs[0, 0].set_xlabel(r'$Z_{re}$ / $\Omega$', fontsize=8)
-    axs[0, 0].set_ylabel(r'-$Z_{im}$ / $\Omega$', fontsize=8)
-    axs[0, 0].legend(fontsize=7)
-    axs[0, 0].grid(which="both", linestyle='--', linewidth=0.5)
-    axs[0, 0].text(-0.2, 1.05, 'a', transform=axs[0, 0].transAxes, fontsize=12, va='top', ha='left')
+    fig, axs = plt.subplots(2, 2, figsize=(10, 7), constrained_layout=True)
 
-    # Bode Magnitude Plot
-    scatter_bode_mag = axs[0, 1].scatter(frequencies, np.abs(Z), label='Data |Z|', s=10, color="darkcyan")
-    axs[0, 1].plot(frequencies, np.abs(Z_fit), '-', label='Model Fit', color="coral")
-    axs[0, 1].set_xscale('log')
-    axs[0, 1].set_xlabel('Frequency / Hz', fontsize=8)
-    axs[0, 1].set_ylabel(r'|Z| / $\Omega$', fontsize=8)
-    axs[0, 1].legend(fontsize=7)
-    axs[0, 1].grid(which="both", linestyle='--', linewidth=0.5)
-    axs[0, 1].text(-0.2, 1.05, 'b', transform=axs[0, 1].transAxes, fontsize=12, va='top', ha='left')
+    label_fs = 11
+    tick_fs = 9
+    legend_fs = 9
+    panel_fs = 12
+    title_fs = 10
 
-    # Bode Phase Plot
-    scatter_bode_phase = axs[1, 0].scatter(frequencies, -np.angle(Z, deg=True), label='Data Phase', s=10, color="darkcyan")
-    axs[1, 0].plot(frequencies, -np.angle(Z_fit, deg=True), '-', label='Model Fit', color="coral")
-    axs[1, 0].set_xscale('log')
-    axs[1, 0].set_xlabel('Frequency / Hz', fontsize=8)
-    axs[1, 0].set_ylabel(r'-$\Phi$ ($\omega$) / °', fontsize=8)
-    axs[1, 0].legend(fontsize=7)
-    axs[1, 0].grid(which="both", linestyle='--', linewidth=0.5)
-    axs[1, 0].text(-0.2, 1.05, 'c', transform=axs[1, 0].transAxes, fontsize=12, va='top', ha='left')
+    # -------------------------
+    # a) Nyquist
+    # -------------------------
+    ax = axs[0, 0]
+    ax.scatter(Z.real, -Z.imag, s=20, label="Data")
+    ax.plot(Z_fit.real, -Z_fit.imag, "-", linewidth=1.8, label="Model fit")
 
-    # Residual Plot
-    res_meas_real = (Z - Z_fit).real
-    res_meas_imag = (Z - Z_fit).imag
-    scatter_residual = axs[1, 1].scatter(frequencies, res_meas_real, label=r"$Z_{re}$ residual", s=10, color="slateblue")
-    axs[1, 1].scatter(frequencies, res_meas_imag, label=r"$-Z_{im}$ residual", s=10, color="mediumvioletred")
-    axs[1, 1].plot(frequencies, res_meas_real, linestyle='-', color="slateblue")
-    axs[1, 1].plot(frequencies, res_meas_imag, linestyle='-', color="mediumvioletred")
-    axs[1, 1].set_xscale('log')
-    axs[1, 1].set_xlabel('Frequency / Hz', fontsize=8)
-    axs[1, 1].set_ylabel(r'$\Delta$', fontsize=8)
-    axs[1, 1].legend(fontsize=7)
-    axs[1, 1].grid(which="both", linestyle='--', linewidth=0.5)
-    axs[1, 1].text(-0.2, 1.05, 'd', transform=axs[1, 1].transAxes, fontsize=12, va='top', ha='left')
+    xlim = _safe_limits(Z.real, pad=0.06, force_zero_min=True)
+    ylim = _safe_limits(-Z.imag, pad=0.06, force_zero_min=True)
+    ax.set_xlim(*xlim)
+    ax.set_ylim(*ylim)
+    ax.set_aspect("equal", adjustable="box")
 
-    fig.tight_layout()
+    if major_ticks is not None and major_ticks > 0:
+        ax.xaxis.set_major_locator(MultipleLocator(major_ticks))
+        ax.yaxis.set_major_locator(MultipleLocator(major_ticks))
+    else:
+        ax.xaxis.set_major_locator(MaxNLocator(6))
+        ax.yaxis.set_major_locator(MaxNLocator(6))
+
+    ax.set_xlabel(r"$Z^\prime$ / $\Omega$", fontsize=label_fs)
+    ax.set_ylabel(r"$-Z^{\prime\prime}$ / $\Omega$", fontsize=label_fs)
+    ax.set_title("Nyquist", fontsize=title_fs)
+    ax.legend(fontsize=legend_fs, frameon=False)
+    _style_axes(ax, tick_fs=tick_fs)
+    ax.text(-0.12, 1.04, "a", transform=ax.transAxes, fontsize=panel_fs, fontweight="bold")
+
+    # -------------------------
+    # b) Bode magnitude
+    # -------------------------
+    ax = axs[0, 1]
+    ax.scatter(frequencies, np.abs(Z), s=18, label="Data")
+    ax.plot(frequencies, np.abs(Z_fit), "-", linewidth=1.8, label="Model fit")
+
+    ax.set_xscale("log")
+    ax.set_yscale("log")
+    ax.set_xlabel("Frequency / Hz", fontsize=label_fs)
+    ax.set_ylabel(r"$|Z|$ / $\Omega$", fontsize=label_fs)
+    ax.set_title("Bode magnitude", fontsize=title_fs)
+    ax.legend(fontsize=legend_fs, frameon=False)
+    _style_axes(ax, tick_fs=tick_fs)
+    ax.text(-0.12, 1.04, "b", transform=ax.transAxes, fontsize=panel_fs, fontweight="bold")
+
+    # -------------------------
+    # c) Bode phase
+    # -------------------------
+    ax = axs[1, 0]
+    phase_data = -np.angle(Z, deg=True)
+    phase_fit = -np.angle(Z_fit, deg=True)
+
+    ax.scatter(frequencies, phase_data, s=18, label="Data")
+    ax.plot(frequencies, phase_fit, "-", linewidth=1.8, label="Model fit")
+
+    ax.set_xscale("log")
+    ax.set_xlabel("Frequency / Hz", fontsize=label_fs)
+    ax.set_ylabel(r"$-\phi$ / °", fontsize=label_fs)
+    ax.set_title("Bode phase", fontsize=title_fs)
+    ax.legend(fontsize=legend_fs, frameon=False)
+    _style_axes(ax, tick_fs=tick_fs)
+    ax.text(-0.12, 1.04, "c", transform=ax.transAxes, fontsize=panel_fs, fontweight="bold")
+
+    # -------------------------
+    # d) Residuals
+    # -------------------------
+    ax = axs[1, 1]
+    res_real_pct = 100 * (Z.real - Z_fit.real) / np.maximum(np.abs(Z.real), 1e-30)
+    res_imag_pct = 100 * ((-Z.imag) - (-Z_fit.imag)) / np.maximum(np.abs(-Z.imag), 1e-30)
+
+    ax.scatter(frequencies, res_real_pct, s=16, label=r"$Z^\prime$ residual")
+    ax.scatter(frequencies, res_imag_pct, s=16, label=r"$-Z^{\prime\prime}$ residual")
+    ax.plot(frequencies, res_real_pct, "-", linewidth=1.4)
+    ax.plot(frequencies, res_imag_pct, "-", linewidth=1.4)
+    ax.axhline(0, linestyle="--", linewidth=1.0, color="black", alpha=0.7)
+
+    ax.set_xscale("log")
+    ax.set_xlabel("Frequency / Hz", fontsize=label_fs)
+    ax.set_ylabel("Residual / %", fontsize=label_fs)
+    ax.set_title("Residuals", fontsize=title_fs)
+    ax.legend(fontsize=legend_fs, frameon=False)
+    _style_axes(ax, tick_fs=tick_fs)
+    ax.text(-0.12, 1.04, "d", transform=ax.transAxes, fontsize=panel_fs, fontweight="bold")
 
     return fig
