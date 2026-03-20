@@ -57,21 +57,19 @@ def _safe_limits(arr, pad=0.05):
 
 
 def _apply_nyquist_format(ax, Z, Z_fit, major_ticks, label_fs, legend_fs, title_fs, panel_fs):
-    # plot fit first so data sits on top
     ax.plot(Z_fit.real, -Z_fit.imag, "-", linewidth=2.4, label="Model fit",
             color=FIT_COLOR, zorder=2)
     ax.scatter(Z.real, -Z.imag, s=26, label="Data",
                color=DATA_COLOR, zorder=3)
 
-    # use BOTH data and fit to determine limits
     all_x = np.concatenate([Z.real, Z_fit.real])
     all_y = np.concatenate([-Z.imag, -Z_fit.imag])
 
     ax.set_xlim(*_safe_limits(all_x, pad=0.08))
     ax.set_ylim(*_safe_limits(all_y, pad=0.08))
 
-    # keep Nyquist physically correct without shrinking weirdly
-    ax.set_aspect("equal", adjustable="box")
+    # Make Nyquist box the same shape as the other panels
+    ax.set_box_aspect(0.92)
 
     if major_ticks is not None and major_ticks > 0:
         ax.xaxis.set_major_locator(MultipleLocator(major_ticks))
@@ -84,7 +82,6 @@ def _apply_nyquist_format(ax, Z, Z_fit, major_ticks, label_fs, legend_fs, title_
     ax.set_ylabel(r"$-Z^{\prime\prime}$ / $\Omega$", fontsize=label_fs)
     ax.set_title("Nyquist", fontsize=title_fs)
 
-    # legend order: Data first, then Model fit
     handles, labels = ax.get_legend_handles_labels()
     order = [1, 0]
     ax.legend([handles[i] for i in order], [labels[i] for i in order],
