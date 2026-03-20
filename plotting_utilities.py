@@ -1,6 +1,5 @@
 import matplotlib.pyplot as plt
 import numpy as np
-import mplcursors
 
 def plot_impedance_results(frequencies, Z, Z_fit, major_ticks):
     fig, axs = plt.subplots(2, 2, figsize=(11, 8), constrained_layout=True)
@@ -70,8 +69,6 @@ def plot_impedance_results(frequencies, Z, Z_fit, major_ticks):
     return fig
 
 def plot_impedance_results_zoomable(frequencies, Z, Z_fit, major_ticks):
-    # Use the TkAgg backend for interactive zoom functionality
-    plt.switch_backend('tkagg')
 
     fig, axs = plt.subplots(2, 2, figsize=(6, 4))
 
@@ -118,29 +115,6 @@ def plot_impedance_results_zoomable(frequencies, Z, Z_fit, major_ticks):
     axs[1, 1].grid(which="both", linestyle='--', linewidth=0.5)
     axs[1, 1].text(-0.2, 1.05, 'd', transform=axs[1, 1].transAxes, fontsize=12, va='top', ha='left')
 
-    # Adding cursors for interactive exploration
-    mplcursors.cursor(scatter_nyquist, hover=2).connect(
-        "add", lambda sel: sel.annotation.set_text(
-            f"Re: {sel.target[0]:.2f}\n-Im: {sel.target[1]:.2f}"
-        )
-    )
-    mplcursors.cursor(scatter_bode_mag, hover=2).connect(
-        "add", lambda sel: sel.annotation.set_text(
-            f"Frequency: {sel.target[0]:.2e} Hz\n|Z|: {sel.target[1]:.2f}"
-        )
-    )
-    mplcursors.cursor(scatter_bode_phase, hover=2).connect(
-        "add", lambda sel: sel.annotation.set_text(
-            f"Frequency: {sel.target[0]:.2e} Hz\nPhase: {sel.target[1]:.2f}°"
-        )
-    )
-    mplcursors.cursor(scatter_residual, hover=2).connect(
-        "add", lambda sel: sel.annotation.set_text(
-            f"Frequency: {sel.target[0]:.2e} Hz\nResidual: {sel.target[1]:.2f}%"
-        )
-    )
-
     fig.tight_layout()
 
-    # Show plot with interactive zooming
-    plt.show()
+    return fig
