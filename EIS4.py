@@ -123,8 +123,8 @@ def read_uploaded_csv_temp(uploaded_file):
     return temp_path
 
 
-def make_fit_plot(frequencies, Z, Z_fit, major_ticks):
-    fig = plot_impedance_results_zoomable(frequencies, Z, Z_fit, major_ticks)
+def make_fit_plot(frequencies, Z, Z_fit):
+    fig = plot_impedance_results_zoomable(frequencies, Z, Z_fit)
     return fig
 
 
@@ -197,12 +197,6 @@ with st.sidebar:
         format="%.6g"
     )
 
-    major_ticks = st.number_input(
-        "Nyquist major ticks",
-        value=500,
-        step=50
-    )
-
     num_iterations = st.number_input(
         "Fit iterations",
         value=1,
@@ -248,7 +242,7 @@ with right:
     st.subheader("Current analysis settings")
     st.write(f"**Frequency range:** {min_freq:g} Hz to {max_freq:g} Hz")
     st.write(f"**Iterations:** {num_iterations}")
-    st.write(f"**Nyquist major ticks:** {major_ticks}")
+    st.write(f"**Nyquist ticks:** Automatic")
     st.write(f"**Uploaded file:** {uploaded_file.name if uploaded_file is not None else 'None'}")
 
 
@@ -286,7 +280,7 @@ if run_analysis:
                 fit_report = str(circuit)
                 fit_table = extract_fit_table(circuit)
 
-                fig = make_fit_plot(frequencies, Z, Z_fit, major_ticks)
+                fig = make_fit_plot(frequencies, Z, Z_fit)
                 plot_bytes = fig_to_png_bytes(fig)
                 plt.close(fig)
 
