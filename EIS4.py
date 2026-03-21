@@ -135,6 +135,70 @@ def fig_to_png_bytes(fig):
     return buf.getvalue()
 
 
+def make_fitted_data_excel(frequencies, Z, Z_fit):
+    freq = np.asarray(frequencies, dtype=float)
+    Z = np.asarray(Z, dtype=complex)
+    Z_fit = np.asarray(Z_fit, dtype=complex)
+
+    # Nyquist
+    nyquist_df = pd.DataFrame({
+        "Frequency (Hz)": freq,
+        "Zreal_exp (ohm)": Z.real,
+        "-Zimag_exp (ohm)": -Z.imag,
+        "Zreal_fit (ohm)": Z_fit.real,
+        "-Zimag_fit (ohm)": -Z_fit.imag,
+    })
+
+    # Bode magnitude
+    bode_mag_df = pd.DataFrame({
+        "Frequency (Hz)": freq,
+        "|Z|_exp (ohm)": np.abs(Z),
+        "|Z|_fit (ohm)": np.abs(Z_fit),
+    })
+
+    # Bode phase
+    bode_phase_df = pd.DataFrame({
+        "Frequency (Hz)": freq,
+        "-Phase_exp (deg)": -np.angle(Z, deg=True),
+        "-Phase_fit (deg)": -np.angle(Z_fit, deg=True),
+    })
+
+    # Residuals
+    residual_df = pd.DataFrame({
+        "Frequency (Hz)": freq,
+        "Residual_Zreal (ohm)": (Z - Z_fit).real,
+        "Residual_-Zimag (ohm)": -(Z - Z_fit).imag,
+    })
+
+    # Combined
+    combined_df = pd.DataFrame({
+        "Frequency (Hz)": freq,
+        "Zreal_exp (ohm)": Z.real,
+        "Zimag_exp (ohm)": Z.imag,
+        "-Zimag_exp (ohm)": -Z.imag,
+        "Zreal_fit (ohm)": Z_fit.real,
+        "Zimag_fit (ohm)": Z_fit.imag,
+        "-Zimag_fit (ohm)": -Z_fit.imag,
+        "|Z|_exp (ohm)": np.abs(Z),
+        "|Z|_fit (ohm)": np.abs(Z_fit),
+        "-Phase_exp (deg)": -np.angle(Z, deg=True),
+        "-Phase_fit (deg)": -np.angle(Z_fit, deg=True),
+        "Residual_Zreal (ohm)": (Z - Z_fit).real,
+        "Residual_-Zimag (ohm)": -(Z - Z_fit).imag,
+    })
+
+    output = io.BytesIO()
+    with pd.ExcelWriter(output, engine="openpyxl") as writer:
+        nyquist_df.to_excel(writer, sheet_name="Nyquist", index=False)
+        bode_mag_df.to_excel(writer, sheet_name="Bode_Magnitude", index=False)
+        bode_phase_df.to_excel(writer, sheet_name="Bode_Phase", index=False)
+        residual_df.to_excel(writer, sheet_name="Residuals", index=False)
+        combined_df.to_excel(writer, sheet_name="Combined_Data", index=False)
+
+    output.seek(0)
+    return output.getvalue()
+
+
 # -----------------------------
 # App state
 # -----------------------------
@@ -146,6 +210,8 @@ if "last_fit_table" not in st.session_state:
     st.session_state.last_fit_table = None
 if "last_plot_bytes" not in st.session_state:
     st.session_state.last_plot_bytes = None
+if "last_fitted_data_excel" not in st.session_state:
+    st.session_state.last_fitted_data_excel = None
 if "analysis_done" not in st.session_state:
     st.session_state.analysis_done = False
 
@@ -242,7 +308,7 @@ with right:
     st.subheader("Current analysis settings")
     st.write(f"**Frequency range:** {min_freq:g} Hz to {max_freq:g} Hz")
     st.write(f"**Iterations:** {num_iterations}")
-    st.write(f"**Nyquist ticks:** Automatic")
+    st.write("**Nyquist ticks:** Automatic")
     st.write(f"**Uploaded file:** {uploaded_file.name if uploaded_file is not None else 'None'}")
 
 
@@ -279,6 +345,7 @@ if run_analysis:
 
                 fit_report = str(circuit)
                 fit_table = extract_fit_table(circuit)
+                fitted_data_excel = make_fitted_data_excel(frequencies, Z, Z_fit)
 
                 fig = make_fit_plot(frequencies, Z, Z_fit)
                 plot_bytes = fig_to_png_bytes(fig)
@@ -288,6 +355,7 @@ if run_analysis:
                 st.session_state.last_fit_report = fit_report
                 st.session_state.last_fit_table = fit_table
                 st.session_state.last_plot_bytes = plot_bytes
+                st.session_state.last_fitted_data_excel = fitted_data_excel
                 st.session_state.analysis_done = True
 
             st.success("Analysis completed successfully.")
@@ -316,7 +384,8 @@ if st.session_state.analysis_done:
 
         csv_data = st.session_state.last_fit_table.to_csv(index=False).encode("utf-8")
 
-        d1, d2 = st.columns(2)
+        d1, d2, d3 = st.columns(3)
+
         with d1:
             st.download_button(
                 label="Download fit CSV",
@@ -332,6 +401,15 @@ if st.session_state.analysis_done:
                 data=st.session_state.last_plot_bytes,
                 file_name="impedance_plot.png",
                 mime="image/png",
+                use_container_width=True
+            )
+
+        with d3:
+            st.download_button(
+                label="Download fitted data Excel",
+                data=st.session_state.last_fitted_data_excel,
+                file_name="fitted_impedance_data.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                 use_container_width=True
             )
 
