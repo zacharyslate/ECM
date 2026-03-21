@@ -1,16 +1,14 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib.ticker import MultipleLocator, MaxNLocator
+from matplotlib.ticker import MultipleLocator, MaxNLocator, AutoMinorLocator
 
 # =========================
-# TURBO-LIKE COLORS
+# POPPY / VIBRANT COLORS
 # =========================
-TURBO = plt.get_cmap("turbo")
-
-DATA_COLOR = TURBO(0.15)   # blue-cyan
-FIT_COLOR  = TURBO(0.78)   # orange-yellow
-RES_REAL   = TURBO(0.05)   # deep purple
-RES_IMAG   = TURBO(0.92)   # red-orange
+DATA_COLOR = "#00A6FB"   # electric blue
+FIT_COLOR  = "#FF006E"   # neon magenta
+RES_REAL   = "#8338EC"   # vivid purple
+RES_IMAG   = "#FB5607"   # strong orange
 
 # =========================
 # GLOBAL STYLE
@@ -33,6 +31,9 @@ def _style_axes(ax, tick_fs=9):
     ax.grid(which="major", linestyle="--", linewidth=0.7, alpha=0.65)
     ax.grid(which="minor", linestyle=":", linewidth=0.45, alpha=0.30)
     ax.tick_params(axis="both", labelsize=tick_fs, direction="in")
+    ax.tick_params(which="major", length=5, width=1.0)
+    ax.tick_params(which="minor", length=3, width=0.8)
+
     for spine in ax.spines.values():
         spine.set_linewidth(1.0)
 
@@ -57,50 +58,77 @@ def _safe_limits(arr, pad=0.05):
 
 
 def _apply_nyquist_format(ax, Z, Z_fit, major_ticks, label_fs, legend_fs, title_fs, panel_fs):
-    ax.plot(Z_fit.real, -Z_fit.imag, "-", linewidth=2.4, label="Model fit",
-            color=FIT_COLOR, zorder=2)
-    ax.scatter(Z.real, -Z.imag, s=26, label="Data",
-               color=DATA_COLOR, zorder=3)
+    ax.plot(
+        Z_fit.real, -Z_fit.imag,
+        "-", linewidth=2.4, label="Model fit",
+        color=FIT_COLOR, zorder=2
+    )
+    ax.scatter(
+        Z.real, -Z.imag,
+        s=26, label="Data",
+        color=DATA_COLOR, zorder=3
+    )
 
     all_x = np.concatenate([Z.real, Z_fit.real])
     all_y = np.concatenate([-Z.imag, -Z_fit.imag])
 
-    ax.set_xlim(*_safe_limits(all_x, pad=0.08))
-    ax.set_ylim(*_safe_limits(all_y, pad=0.08))
+    ax.set_xlim(*_safe_limits(all_x, pad=0.06))
+    ax.set_ylim(*_safe_limits(all_y, pad=0.06))
 
-    # Make Nyquist box the same shape as the other panels
-    ax.set_box_aspect(0.92)
+    # True Nyquist scaling + square panel
+    ax.set_aspect("equal", adjustable="box")
+    ax.set_box_aspect(1.0)
 
+    # Major ticks
     if major_ticks is not None and major_ticks > 0:
         ax.xaxis.set_major_locator(MultipleLocator(major_ticks))
         ax.yaxis.set_major_locator(MultipleLocator(major_ticks))
     else:
-        ax.xaxis.set_major_locator(MaxNLocator(6))
-        ax.yaxis.set_major_locator(MaxNLocator(6))
+        ax.xaxis.set_major_locator(MaxNLocator(5))
+        ax.yaxis.set_major_locator(MaxNLocator(5))
+
+    # Minor ticks
+    ax.xaxis.set_minor_locator(AutoMinorLocator(2))
+    ax.yaxis.set_minor_locator(AutoMinorLocator(2))
 
     ax.set_xlabel(r"$Z^\prime$ / $\Omega$", fontsize=label_fs)
     ax.set_ylabel(r"$-Z^{\prime\prime}$ / $\Omega$", fontsize=label_fs)
     ax.set_title("Nyquist", fontsize=title_fs)
 
     handles, labels = ax.get_legend_handles_labels()
-    order = [1, 0]
-    ax.legend([handles[i] for i in order], [labels[i] for i in order],
-              fontsize=legend_fs, frameon=False, loc="best")
+    order = [1, 0]  # Data first, fit second
+    ax.legend(
+        [handles[i] for i in order],
+        [labels[i] for i in order],
+        fontsize=legend_fs,
+        frameon=False,
+        loc="best"
+    )
 
     _style_axes(ax)
-    ax.text(-0.12, 1.05, "a", transform=ax.transAxes,
-            fontsize=panel_fs, fontweight="bold")
+    ax.text(
+        -0.12, 1.05, "a",
+        transform=ax.transAxes,
+        fontsize=panel_fs,
+        fontweight="bold"
+    )
 
 
 def _apply_bode_mag_format(ax, frequencies, Z, Z_fit, label_fs, legend_fs, title_fs, panel_fs):
-    ax.plot(frequencies, np.abs(Z_fit), "-", linewidth=2.4, label="Model fit",
-            color=FIT_COLOR, zorder=2)
-    ax.scatter(frequencies, np.abs(Z), s=22, label="Data",
-               color=DATA_COLOR, zorder=3)
+    ax.plot(
+        frequencies, np.abs(Z_fit),
+        "-", linewidth=2.4, label="Model fit",
+        color=FIT_COLOR, zorder=2
+    )
+    ax.scatter(
+        frequencies, np.abs(Z),
+        s=22, label="Data",
+        color=DATA_COLOR, zorder=3
+    )
 
     ax.set_xscale("log")
     ax.set_yscale("log")
-    ax.set_box_aspect(0.92)
+    ax.set_box_aspect(1.0)
 
     ax.set_xlabel("Frequency / Hz", fontsize=label_fs)
     ax.set_ylabel(r"$|Z|$ / $\Omega$", fontsize=label_fs)
@@ -108,25 +136,40 @@ def _apply_bode_mag_format(ax, frequencies, Z, Z_fit, label_fs, legend_fs, title
 
     handles, labels = ax.get_legend_handles_labels()
     order = [1, 0]
-    ax.legend([handles[i] for i in order], [labels[i] for i in order],
-              fontsize=legend_fs, frameon=False, loc="best")
+    ax.legend(
+        [handles[i] for i in order],
+        [labels[i] for i in order],
+        fontsize=legend_fs,
+        frameon=False,
+        loc="best"
+    )
 
     _style_axes(ax)
-    ax.text(-0.12, 1.05, "b", transform=ax.transAxes,
-            fontsize=panel_fs, fontweight="bold")
+    ax.text(
+        -0.12, 1.05, "b",
+        transform=ax.transAxes,
+        fontsize=panel_fs,
+        fontweight="bold"
+    )
 
 
 def _apply_bode_phase_format(ax, frequencies, Z, Z_fit, label_fs, legend_fs, title_fs, panel_fs):
     phase_data = -np.angle(Z, deg=True)
     phase_fit = -np.angle(Z_fit, deg=True)
 
-    ax.plot(frequencies, phase_fit, "-", linewidth=2.4, label="Model fit",
-            color=FIT_COLOR, zorder=2)
-    ax.scatter(frequencies, phase_data, s=22, label="Data",
-               color=DATA_COLOR, zorder=3)
+    ax.plot(
+        frequencies, phase_fit,
+        "-", linewidth=2.4, label="Model fit",
+        color=FIT_COLOR, zorder=2
+    )
+    ax.scatter(
+        frequencies, phase_data,
+        s=22, label="Data",
+        color=DATA_COLOR, zorder=3
+    )
 
     ax.set_xscale("log")
-    ax.set_box_aspect(0.92)
+    ax.set_box_aspect(1.0)
 
     ax.set_xlabel("Frequency / Hz", fontsize=label_fs)
     ax.set_ylabel(r"$-\phi$ / °", fontsize=label_fs)
@@ -134,12 +177,21 @@ def _apply_bode_phase_format(ax, frequencies, Z, Z_fit, label_fs, legend_fs, tit
 
     handles, labels = ax.get_legend_handles_labels()
     order = [1, 0]
-    ax.legend([handles[i] for i in order], [labels[i] for i in order],
-              fontsize=legend_fs, frameon=False, loc="best")
+    ax.legend(
+        [handles[i] for i in order],
+        [labels[i] for i in order],
+        fontsize=legend_fs,
+        frameon=False,
+        loc="best"
+    )
 
     _style_axes(ax)
-    ax.text(-0.12, 1.05, "c", transform=ax.transAxes,
-            fontsize=panel_fs, fontweight="bold")
+    ax.text(
+        -0.12, 1.05, "c",
+        transform=ax.transAxes,
+        fontsize=panel_fs,
+        fontweight="bold"
+    )
 
 
 def _apply_residual_format(ax, frequencies, Z, Z_fit, label_fs, legend_fs, title_fs, panel_fs):
@@ -149,15 +201,21 @@ def _apply_residual_format(ax, frequencies, Z, Z_fit, label_fs, legend_fs, title
     ax.plot(frequencies, res_real, "-", linewidth=1.5, color=RES_REAL, zorder=2)
     ax.plot(frequencies, res_imag, "-", linewidth=1.5, color=RES_IMAG, zorder=2)
 
-    ax.scatter(frequencies, res_real, s=18, label=r"$Z^\prime$ residual",
-               color=RES_REAL, zorder=3)
-    ax.scatter(frequencies, res_imag, s=18, label=r"$-Z^{\prime\prime}$ residual",
-               color=RES_IMAG, zorder=3)
+    ax.scatter(
+        frequencies, res_real,
+        s=18, label=r"$Z^\prime$ residual",
+        color=RES_REAL, zorder=3
+    )
+    ax.scatter(
+        frequencies, res_imag,
+        s=18, label=r"$-Z^{\prime\prime}$ residual",
+        color=RES_IMAG, zorder=3
+    )
 
     ax.axhline(0, linestyle="--", linewidth=1.0, color="black", alpha=0.7)
 
     ax.set_xscale("log")
-    ax.set_box_aspect(0.92)
+    ax.set_box_aspect(1.0)
 
     ax.set_xlabel("Frequency / Hz", fontsize=label_fs)
     ax.set_ylabel(r"$\Delta$ / $\Omega$", fontsize=label_fs)
@@ -165,13 +223,18 @@ def _apply_residual_format(ax, frequencies, Z, Z_fit, label_fs, legend_fs, title
     ax.legend(fontsize=legend_fs, frameon=False, loc="best")
 
     _style_axes(ax)
-    ax.text(-0.12, 1.05, "d", transform=ax.transAxes,
-            fontsize=panel_fs, fontweight="bold")
+    ax.text(
+        -0.12, 1.05, "d",
+        transform=ax.transAxes,
+        fontsize=panel_fs,
+        fontweight="bold"
+    )
 
 
 def plot_impedance_results(frequencies, Z, Z_fit, major_ticks=None):
     """
-    Publication-style 2x2 plot with improved spacing and Nyquist scaling.
+    Publication-style 2x2 plot with tighter vertical spacing,
+    poppy vibrant colors, and improved Nyquist tick formatting.
     """
     frequencies = np.asarray(frequencies)
     Z = np.asarray(Z)
@@ -180,8 +243,10 @@ def plot_impedance_results(frequencies, Z, Z_fit, major_ticks=None):
     fig = plt.figure(figsize=(10.2, 7.0), dpi=150)
     gs = fig.add_gridspec(
         2, 2,
-        left=0.08, right=0.98, bottom=0.09, top=0.94,
-        wspace=0.18, hspace=0.34
+        left=0.08, right=0.98,
+        bottom=0.08, top=0.95,
+        wspace=0.16,
+        hspace=0.22
     )
 
     ax1 = fig.add_subplot(gs[0, 0])
@@ -204,7 +269,8 @@ def plot_impedance_results(frequencies, Z, Z_fit, major_ticks=None):
 
 def plot_impedance_results_zoomable(frequencies, Z, Z_fit, major_ticks=None):
     """
-    Streamlit-friendly fixed-size figure with tighter layout.
+    Streamlit-friendly fixed-size figure with tighter spacing
+    and improved Nyquist axis/tick styling.
     """
     frequencies = np.asarray(frequencies)
     Z = np.asarray(Z)
@@ -213,8 +279,10 @@ def plot_impedance_results_zoomable(frequencies, Z, Z_fit, major_ticks=None):
     fig = plt.figure(figsize=(9.6, 6.8), dpi=150)
     gs = fig.add_gridspec(
         2, 2,
-        left=0.08, right=0.98, bottom=0.10, top=0.93,
-        wspace=0.16, hspace=0.30
+        left=0.08, right=0.98,
+        bottom=0.09, top=0.94,
+        wspace=0.15,
+        hspace=0.20
     )
 
     ax1 = fig.add_subplot(gs[0, 0])
