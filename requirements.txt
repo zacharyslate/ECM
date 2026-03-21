@@ -7,3 +7,4 @@ impedance
 Pillow
 openpyxl
 mplcursors
+dash
