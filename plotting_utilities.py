@@ -245,7 +245,7 @@ def plot_impedance_results(frequencies, Z, Z_fit, major_ticks=None):
         2, 2,
         left=0.08, right=0.98,
         bottom=0.08, top=0.95,
-        wspace=0.16,
+        wspace=0.10,
         hspace=0.22
     )
 
