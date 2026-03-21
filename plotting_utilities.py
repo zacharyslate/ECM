@@ -57,7 +57,7 @@ def _safe_limits(arr, pad=0.05):
     return amin, amax
 
 
-def _apply_nyquist_format(ax, Z, Z_fit, major_ticks, label_fs, legend_fs, title_fs, panel_fs):
+def _apply_nyquist_format(ax, Z, Z_fit, label_fs, legend_fs, title_fs, panel_fs):
     ax.plot(
         Z_fit.real, -Z_fit.imag,
         "-", linewidth=2.4, label="Model fit",
@@ -75,28 +75,28 @@ def _apply_nyquist_format(ax, Z, Z_fit, major_ticks, label_fs, legend_fs, title_
     ax.set_xlim(*_safe_limits(all_x, pad=0.06))
     ax.set_ylim(*_safe_limits(all_y, pad=0.06))
 
-    # True Nyquist scaling + square panel
+    # True Nyquist scaling
     ax.set_aspect("equal", adjustable="box")
     ax.set_box_aspect(1.0)
 
-    # Major ticks
-    if major_ticks is not None and major_ticks > 0:
-        ax.xaxis.set_major_locator(MultipleLocator(major_ticks))
-        ax.yaxis.set_major_locator(MultipleLocator(major_ticks))
-    else:
-        ax.xaxis.set_major_locator(MaxNLocator(5))
-        ax.yaxis.set_major_locator(MaxNLocator(5))
+    # =========================
+    # FULLY AUTOMATIC TICKS
+    # =========================
+    ax.xaxis.set_major_locator(MaxNLocator(nbins=5, prune=None))
+    ax.yaxis.set_major_locator(MaxNLocator(nbins=5, prune=None))
 
-    # Minor ticks
     ax.xaxis.set_minor_locator(AutoMinorLocator(2))
     ax.yaxis.set_minor_locator(AutoMinorLocator(2))
+
+    # Optional: cleaner tick formatting (no weird decimals)
+    ax.ticklabel_format(style='plain', axis='both')
 
     ax.set_xlabel(r"$Z^\prime$ / $\Omega$", fontsize=label_fs)
     ax.set_ylabel(r"$-Z^{\prime\prime}$ / $\Omega$", fontsize=label_fs)
     ax.set_title("Nyquist", fontsize=title_fs)
 
     handles, labels = ax.get_legend_handles_labels()
-    order = [1, 0]  # Data first, fit second
+    order = [1, 0]
     ax.legend(
         [handles[i] for i in order],
         [labels[i] for i in order],
@@ -112,7 +112,6 @@ def _apply_nyquist_format(ax, Z, Z_fit, major_ticks, label_fs, legend_fs, title_
         fontsize=panel_fs,
         fontweight="bold"
     )
-
 
 def _apply_bode_mag_format(ax, frequencies, Z, Z_fit, label_fs, legend_fs, title_fs, panel_fs):
     ax.plot(
@@ -281,7 +280,7 @@ def plot_impedance_results_zoomable(frequencies, Z, Z_fit, major_ticks=None):
         2, 2,
         left=0.08, right=0.98,
         bottom=0.09, top=0.94,
-        wspace=0.15,
+        wspace=0.10,
         hspace=0.20
     )
 
