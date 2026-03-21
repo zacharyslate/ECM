@@ -178,7 +178,7 @@ def plot_impedance_results(frequencies, Z, Z_fit):
         2, 2,
         left=0.08, right=0.98,
         bottom=0.08, top=0.95,
-        wspace=0.16, hspace=0.22
+        wspace=0.20, hspace=0.15
     )
 
     ax1 = fig.add_subplot(gs[0, 0])
@@ -209,7 +209,7 @@ def plot_impedance_results_zoomable(frequencies, Z, Z_fit):
         2, 2,
         left=0.08, right=0.98,
         bottom=0.09, top=0.94,
-        wspace=0.15, hspace=0.20
+        wspace=0.20, hspace=0.15
     )
 
     ax1 = fig.add_subplot(gs[0, 0])
