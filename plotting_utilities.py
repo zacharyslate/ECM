@@ -59,7 +59,7 @@ def _apply_nyquist_format(ax, Z, Z_fit, label_fs, legend_fs, title_fs, panel_fs)
     ax.plot(Z_fit.real, -Z_fit.imag, "-", linewidth=2.4, label="Model fit",
             color=FIT_COLOR, zorder=2)
     ax.scatter(Z.real, -Z.imag, s=26, label="Data",
-               color=DATA_COLOR, zorder=3)
+               facecolors='NONE', edgecolors=DATA_COLOR, linewidths=1.2, zorder=3)
 
     all_x = np.concatenate([Z.real, Z_fit.real])
     all_y = np.concatenate([-Z.imag, -Z_fit.imag])
@@ -95,7 +95,7 @@ def _apply_bode_mag_format(ax, frequencies, Z, Z_fit, label_fs, legend_fs, title
     ax.plot(frequencies, np.abs(Z_fit), "-", linewidth=2.4, label="Model fit",
             color=FIT_COLOR, zorder=2)
     ax.scatter(frequencies, np.abs(Z), s=22, label="Data",
-               color=DATA_COLOR, zorder=3)
+               facecolors='NONE', edgecolors=DATA_COLOR, linewidths=1.2, zorder=3)
 
     ax.set_xscale("log")
     ax.set_yscale("log")
@@ -122,7 +122,7 @@ def _apply_bode_phase_format(ax, frequencies, Z, Z_fit, label_fs, legend_fs, tit
     ax.plot(frequencies, phase_fit, "-", linewidth=2.4, label="Model fit",
             color=FIT_COLOR, zorder=2)
     ax.scatter(frequencies, phase_data, s=22, label="Data",
-               color=DATA_COLOR, zorder=3)
+               facecolors='NONE', edgecolors=DATA_COLOR, linewidths=1.2, zorder=3)
 
     ax.set_xscale("log")
     ax.set_box_aspect(1.0)
